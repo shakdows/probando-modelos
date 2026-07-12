@@ -77,7 +77,7 @@
     <h2>Control de cierre</h2><div id="check"></div>
     <h2>Luz</h2>
     <div class="row"><span>Hora</span><input type="range" id="hora" min="7" max="19" step=".5" value="10"><b id="hora-v" style="font-family:Orbitron;font-size:11px">10:00</b></div>
-    <div class="row"><span>Exposición</span><input type="range" id="expo" min=".5" max="2" step=".05" value="1.15"></div>
+    <div class="row"><span>Exposición</span><input type="range" id="expo" min=".4" max="1.6" step=".02" value=".82"></div>
     <h2>Acabados</h2><div class="acab" id="acab"></div>
     <h2>Recorrido</h2>
     <button class="primary" id="btn-tour">Reproducir recorrido</button>
@@ -137,8 +137,8 @@ const SPC = lienzo(1024,1024,(g,w,h)=>{
   const cols=1, filas=Math.round(1024/ (1024*0.19/1.20));   // proporción tabla
   const th = 1024/6;                                          // 6 tablas por tile de 1.14 m
   for(let i=0;i<6;i++){
-    const y=i*th, tono=176+rnd()*22-11, off=(i%2)*0.35;
-    g.fillStyle=`rgb(${tono*.92|0},${tono*.78|0},${tono*.62|0})`;
+    const y=i*th, tono=118+rnd()*20-10, off=(i%2)*0.35;
+    g.fillStyle=`rgb(${tono*1.00|0},${tono*.79|0},${tono*.58|0})`;
     g.fillRect(0,y,w,th);
     // veta
     for(let k=0;k<70;k++){
@@ -207,7 +207,7 @@ const N_SPC=normalDe(SPC,2.1), N_PORC=normalDe(PORC,1.1), N_MURO=normalDe(MURO,.
 const mat = {
   SPC: (a=1)=>new THREE.MeshStandardMaterial({
     map:tex(SPC,a/1.14,a/1.14), normalMap:tex(N_SPC,a/1.14,a/1.14),
-    normalScale:new THREE.Vector2(.7,.7), roughness:.55, metalness:.02, envMapIntensity:.75}),
+    normalScale:new THREE.Vector2(.8,.8), roughness:.48, metalness:.02, envMapIntensity:.45}),
   porc:(a=1)=>new THREE.MeshStandardMaterial({
     map:tex(PORC,a/.6,a/.6), normalMap:tex(N_PORC,a/.6,a/.6),
     normalScale:new THREE.Vector2(.35,.35), roughness:.28, metalness:.03, envMapIntensity:1.15}),
@@ -216,7 +216,7 @@ const mat = {
     roughness:.78, metalness:.02, envMapIntensity:.9}),
   muro:(a=1)=>new THREE.MeshStandardMaterial({
     map:tex(MURO,a/2.5,a/2.5), normalMap:tex(N_MURO,a/2.5,a/2.5),
-    normalScale:new THREE.Vector2(.25,.25), roughness:.93, metalness:0, envMapIntensity:.6}),
+    normalScale:new THREE.Vector2(.25,.25), roughness:.95, metalness:0, envMapIntensity:.32}),
   cuarzo:()=>new THREE.MeshStandardMaterial({
     map:tex(CUARZO,1.6,1.6), roughness:.16, metalness:.05, envMapIntensity:1.5}),
   zocalo:()=>new THREE.MeshStandardMaterial({color:0xf7f6f4, roughness:.4, metalness:.02}),
@@ -244,7 +244,7 @@ const escena=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(70,1,.05,200);
 const rend=new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
 rend.shadowMap.enabled=true; rend.shadowMap.type=THREE.VSMShadowMap;
-rend.toneMapping=THREE.ACESFilmicToneMapping; rend.toneMappingExposure=1.15;
+rend.toneMapping=THREE.ACESFilmicToneMapping; rend.toneMappingExposure=.82;
 vp.appendChild(rend.domElement);
 
 // IBL — esto es el 80% del salto. Da rebote y reflejos en cada superficie.
@@ -255,10 +255,10 @@ escena.background=new THREE.Color(0x9fb4d4);
 escena.fog=new THREE.Fog(0xb8c8e0, 30, 90);
 
 // sol: entra por las ventanas
-const sol=new THREE.DirectionalLight(0xfff0d8, 3.2);
+const sol=new THREE.DirectionalLight(0xfff0d8, 1.8);
 sol.castShadow=true; sol.shadow.mapSize.set(2048,2048); sol.shadow.radius=6; sol.shadow.bias=-.0004;
 Object.assign(sol.shadow.camera,{left:-12,right:12,top:12,bottom:-12,near:.5,far:50});
-escena.add(sol, new THREE.AmbientLight(0xcfe0ff, .35));
+escena.add(sol, new THREE.AmbientLight(0xcfe0ff, .10));
 
 const ctrl=new PointerLockControls(cam, rend.domElement);
 escena.add(ctrl.getObject());
@@ -274,7 +274,7 @@ try{
   comp=new EffectComposer(rend);
   comp.addPass(new RenderPass(escena,cam));
   ssao=new SSAOPass(escena,cam,1,1);
-  ssao.kernelRadius=.28; ssao.minDistance=.0012; ssao.maxDistance=.055;
+  ssao.kernelRadius=.22; ssao.minDistance=.0008; ssao.maxDistance=.10;
   comp.addPass(ssao);
   comp.addPass(new OutputPass());
 }catch(e){ console.warn('SSAO no disponible, sigo sin él', e); comp=null; }
@@ -363,7 +363,7 @@ function muro(a,b,h,esp,tipoMat,vanos,luces){
       }
       // LUZ DE VENTANA — el cue que dice "esto es una foto de inmueble"
       const alto=(h-.14)-alf;
-      const rl=new THREE.RectAreaLight(0xfff4e4, c.tipo==='mampara'?13:9, anchoV, alto);
+      const rl=new THREE.RectAreaLight(0xfff4e4, c.tipo==='mampara'?4.2:2.8, anchoV, alto);
       const pl=pos((c.t0+c.t1)/2,(alf+h-.14)/2, esp/2+.02);
       rl.position.set(pl[0],pl[1],pl[2]);
       rl.lookAt(pl[0]-Math.sin(ang)*3, pl[1]-.4, pl[2]+Math.cos(ang)*3);
@@ -579,7 +579,7 @@ function posSol(){
   sol.position.set(c[0]-az*18, 2+alt*20, c[1]-14);
   const calidez=1-Math.abs(t-13)/9;            // dorado en extremos
   sol.color.setHSL(.09 - calidez*.02, .55-calidez*.25, .55+calidez*.10);
-  sol.intensity=1.0+alt*2.8;
+  sol.intensity=.55+alt*1.5;
   escena.background=new THREE.Color().setHSL(.58, .35, .40+alt*.35);
   document.getElementById('hora-v').textContent=`${String(Math.floor(t)).padStart(2,'0')}:${t%1?'30':'00'}`;
 }
@@ -678,7 +678,7 @@ function loop(){
     if(teclas.KeyD||teclas.ArrowRight)vel.x+=s;
     ctrl.moveForward(vel.z); ctrl.moveRight(vel.x);
   }
-  comp && !planta ? comp.render() : rend.render(escena,cam);
+  comp ? comp.render() : rend.render(escena,cam);
 }
 function resize(){
   const w=vp.clientWidth,ht=vp.clientHeight;
