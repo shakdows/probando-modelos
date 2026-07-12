@@ -1,6 +1,7 @@
 {
   "id": "GRAU10-TIPO01",
-  "_procedencia": "TRAZADO A MANO como referencia (gold standard). No es salida del extractor. Sirve para (a) demostrar el visor y (b) ser el objetivo que el extractor debe reproducir.",
+  "_procedencia": "TRAZADO A MANO (gold standard). v2: los muros se DECLARAN, no se deducen de los ambientes. SALA COMEDOR + KITCHENETTE son un solo espacio abierto — asi es el plano real.",
+  "esquema": 2,
   "proyecto": "Grau 10 · Av. Miguel Grau 1020, Barranco",
   "desarrolladora": "Edifica",
   "arquitecto": "Lima 1007 Arquitectos",
@@ -8,58 +9,58 @@
   "dormitorios": 1,
   "altura_techo_m": 2.4,
   "orientacion": "fachada a AV. MIGUEL GRAU",
-  "poligono_exterior_m": [[0, 0], [6.0, 0], [6.0, 7.22], [0, 7.22]],
+
+  "poligono_exterior_m": [[0,0],[6.0,0],[6.0,7.22],[0,7.22]],
+
+  "muros_m": [
+    {"a":[0,0],       "b":[6.0,0],    "esp":0.20, "tipo":"exterior"},
+    {"a":[6.0,0],     "b":[6.0,7.22], "esp":0.20, "tipo":"exterior"},
+    {"a":[6.0,7.22],  "b":[0,7.22],   "esp":0.20, "tipo":"exterior"},
+    {"a":[0,7.22],    "b":[0,0],      "esp":0.20, "tipo":"exterior"},
+
+    {"a":[3.02,0.62], "b":[3.02,4.15], "esp":0.10, "tipo":"interior", "_":"sala | dormitorio"},
+    {"a":[3.02,4.15], "b":[6.0,4.15],  "esp":0.10, "tipo":"interior", "_":"dormitorio | bano"},
+    {"a":[4.05,4.15], "b":[4.05,7.22], "esp":0.10, "tipo":"interior", "_":"bano | kitchenette"},
+    {"a":[0,0.62],    "b":[3.02,0.62], "esp":0.10, "tipo":"interior", "_":"sala | terraza"}
+  ],
+
+  "_sin_muro": "Entre SALA COMEDOR y KITCHENETTE NO hay tabique. Es planta abierta. Si el extractor inventa uno ahi, esta mal.",
+
   "ambientes": [
-    {
-      "nombre": "SALA COMEDOR",
-      "tipo": "sala",
-      "cota_impresa_m": [2.7, 4.9],
-      "poligono_m": [[0.15, 0.65], [2.85, 0.65], [2.85, 5.55], [0.15, 5.55]],
-      "muebles": ["sofa", "tv", "mesa_comedor", "mesa_centro"]
-    },
-    {
-      "nombre": "KITCHENETTE",
-      "tipo": "cocina",
-      "cota_impresa_m": [3.13, 1.5],
-      "poligono_m": [[0.15, 5.55], [3.28, 5.55], [3.28, 7.05], [0.15, 7.05]],
-      "muebles": ["encimera", "campana", "fregadero", "refrigeradora", "lavadora"]
-    },
-    {
-      "nombre": "DORMITORIO PRINCIPAL",
-      "tipo": "dormitorio",
-      "cota_impresa_m": [2.7, 3.4],
-      "poligono_m": [[3.15, 0.65], [5.85, 0.65], [5.85, 4.05], [3.15, 4.05]],
-      "muebles": ["cama", "veladores", "closet"]
-    },
-    {
-      "nombre": "BAÑO",
-      "tipo": "bano",
-      "cota_impresa_m": null,
-      "poligono_m": [[4.2, 4.6], [5.85, 4.6], [5.85, 7.05], [4.2, 7.05]],
-      "muebles": ["inodoro", "ducha", "lavatorio"]
-    },
-    {
-      "nombre": "TERRAZA",
-      "tipo": "terraza",
-      "cota_impresa_m": null,
-      "poligono_m": [[0.15, 0.05], [3.0, 0.05], [3.0, 0.65], [0.15, 0.65]],
-      "muebles": ["planta"]
-    }
+    {"nombre":"SALA COMEDOR","tipo":"sala","cota_impresa_m":[2.7,4.9],
+     "poligono_m":[[0.1,0.72],[2.92,0.72],[2.92,5.55],[0.1,5.55]],
+     "muebles":["sofa","tv","mesa_comedor","mesa_centro"]},
+
+    {"nombre":"KITCHENETTE","tipo":"cocina","cota_impresa_m":[3.13,1.5],
+     "poligono_m":[[0.1,5.55],[3.95,5.55],[3.95,7.12],[0.1,7.12]],
+     "muebles":["encimera","campana","fregadero","refrigeradora","lavadora"]},
+
+    {"nombre":"DORMITORIO PRINCIPAL","tipo":"dormitorio","cota_impresa_m":[2.7,3.4],
+     "poligono_m":[[3.12,0.72],[5.9,0.72],[5.9,4.05],[3.12,4.05]],
+     "muebles":["cama","veladores","closet"]},
+
+    {"nombre":"BAÑO","tipo":"bano","cota_impresa_m":null,
+     "poligono_m":[[4.15,4.25],[5.9,4.25],[5.9,7.12],[4.15,7.12]],
+     "muebles":["inodoro","ducha","lavatorio"]},
+
+    {"nombre":"TERRAZA","tipo":"terraza","cota_impresa_m":null,
+     "poligono_m":[[0.1,0.1],[3.02,0.1],[3.02,0.55],[0.1,0.55]],
+     "muebles":["planta"]}
   ],
+
   "vanos_m": [
-    { "tipo": "mampara", "extremos_m": [[0.4, 0.65], [2.6, 0.65]] },
-    { "tipo": "ventana", "extremos_m": [[3.6, 0.65], [5.5, 0.65]] },
-    { "tipo": "puerta", "extremos_m": [[3.15, 2.3], [3.15, 3.2]] },
-    { "tipo": "puerta", "extremos_m": [[4.2, 5.0], [4.2, 5.9]] },
-    { "tipo": "ventana", "extremos_m": [[0.15, 2.0], [0.15, 4.2]] }
+    {"tipo":"mampara","extremos_m":[[0.45,0.62],[2.65,0.62]], "_":"sala -> terraza"},
+    {"tipo":"ventana","extremos_m":[[3.65,0],[5.55,0]],       "_":"dormitorio, fachada Grau"},
+    {"tipo":"ventana","extremos_m":[[0,2.0],[0,4.3]],         "_":"sala, muro lateral"},
+    {"tipo":"puerta", "extremos_m":[[3.02,2.30],[3.02,3.20]], "_":"-> dormitorio"},
+    {"tipo":"puerta", "extremos_m":[[4.05,5.10],[4.05,6.00]], "_":"-> bano"}
   ],
+
   "acabados": {
-    "piso_sala": "SPC",
-    "piso_cocina": "SPC",
-    "tablero_cocina": "cuarzo",
-    "tablero_bano": "cuarzo",
-    "cocina": "equipada: encimera, horno, campana",
-    "ventanas": "perfilería de vidrio con reducción acústica"
+    "piso_sala":"SPC","piso_cocina":"SPC",
+    "tablero_cocina":"cuarzo","tablero_bano":"cuarzo",
+    "cocina":"equipada: encimera, horno, campana",
+    "ventanas":"perfilería de vidrio con reducción acústica"
   },
-  "_fuente_acabados": "Página 28 del deck. Dictados por Edifica, no inferidos."
+  "_fuente_acabados": "Pagina 28 del deck. Dictados por Edifica, no inferidos."
 }
