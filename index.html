@@ -220,7 +220,8 @@ const mat = {
   cuarzo:()=>new THREE.MeshStandardMaterial({
     map:tex(CUARZO,1.6,1.6), roughness:.16, metalness:.05, envMapIntensity:1.5}),
   zocalo:()=>new THREE.MeshStandardMaterial({color:0xf7f6f4, roughness:.4, metalness:.02}),
-  marco: ()=>new THREE.MeshStandardMaterial({color:0x2c2f38, roughness:.42, metalness:.55}),
+  marco: ()=>new THREE.MeshStandardMaterial({color:0xf5f3f0, roughness:.45, metalness:.02}),   // puerta
+  perfil:()=>new THREE.MeshStandardMaterial({color:0x3a3d45, roughness:.38, metalness:.55}),   // ventana
   vidrio:()=>new THREE.MeshPhysicalMaterial({color:0xffffff, transmission:.94, thickness:.02,
     roughness:.03, metalness:0, ior:1.5, transparent:true, opacity:.5,
     clearcoat:1, clearcoatRoughness:.02}),
@@ -241,7 +242,7 @@ const ESP_EXT=.20, ESP_INT=.10, H_ZOC=.09;
    ════════════════════════════════════════════════════════════════════ */
 const vp=document.getElementById('viewport');
 const escena=new THREE.Scene();
-const cam=new THREE.PerspectiveCamera(70,1,.05,200);
+const cam=new THREE.PerspectiveCamera(55,1,.05,200);  // ≈24mm. 70 era ojo de pez.
 const rend=new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
 rend.shadowMap.enabled=true; rend.shadowMap.type=THREE.VSMShadowMap;
 rend.toneMapping=THREE.ACESFilmicToneMapping; rend.toneMappingExposure=.82;
@@ -342,9 +343,9 @@ function muro(a,b,h,esp,tipoMat,vanos,luces){
       bloque(c.t0,c.t1,2.10,h,M);
       // marco
       for(const t of [c.t0,c.t1]){
-        const p=pos(t,1.05); G.add(caja(.05,2.10,esp+.03,mat.marco(),p[0],p[1],p[2],-ang));
+        const p=pos(t,1.05); G.add(caja(.04,2.10,esp+.02,mat.marco(),p[0],p[1],p[2],-ang));
       }
-      const p=pos((c.t0+c.t1)/2,2.10); G.add(caja(anchoV,.05,esp+.03,mat.marco(),p[0],p[1],p[2],-ang));
+      const p=pos((c.t0+c.t1)/2,2.10); G.add(caja(anchoV,.04,esp+.02,mat.marco(),p[0],p[1],p[2],-ang));
     }else{
       const alf = c.tipo==='mampara' ? .03 : .95;
       bloque(c.t0,c.t1,0,alf,M); zocalo(c.t0,c.t1);
@@ -355,11 +356,11 @@ function muro(a,b,h,esp,tipoMat,vanos,luces){
       // perfilería (p28: "perfilería de vidrio con reducción acústica")
       for(const t of [c.t0+.03,c.t1-.03]){
         const p=pos(t,(alf+h-.14)/2);
-        G.add(caja(.05,(h-.14)-alf,esp*.7,mat.marco(),p[0],p[1],p[2],-ang));
+        G.add(caja(.05,(h-.14)-alf,esp*.7,mat.perfil(),p[0],p[1],p[2],-ang));
       }
       for(const y of [alf+.02, h-.16]){
         const p=pos((c.t0+c.t1)/2,y);
-        G.add(caja(anchoV,.05,esp*.7,mat.marco(),p[0],p[1],p[2],-ang));
+        G.add(caja(anchoV,.05,esp*.7,mat.perfil(),p[0],p[1],p[2],-ang));
       }
       // LUZ DE VENTANA — el cue que dice "esto es una foto de inmueble"
       const alto=(h-.14)-alf;
@@ -401,8 +402,8 @@ const MUEBLE = {
     const d=[Math.sin(ang),Math.cos(ang)];
     G.add(caja(1.50,.55,.06, mat.tela(0xdedbd4), c[0]-d[0]*1.0, .58, c[1]-d[1]*1.0, ang)); // cabecera
     for(const s of [-1,1]){
-      G.add(caja(.44,.12,.30, mat.tela(0xffffff),
-        c[0]-d[0]*.72 + Math.cos(ang)*.36*s, .60, c[1]-d[1]*.72 + Math.sin(ang)*.36*s, ang));
+      G.add(caja(.46,.11,.30, mat.tela(0xffffff),
+        c[0]-d[0]*.70 + Math.cos(ang)*.34*s, .585, c[1]-d[1]*.70 + Math.sin(ang)*.34*s, ang));
       G.add(caja(.40,.42,.36, mat.madera(),
         c[0]-d[0]*.95 + Math.cos(ang)*1.02*s, .21, c[1]-d[1]*.95 + Math.sin(ang)*1.02*s, ang));
     }
@@ -439,8 +440,9 @@ const MUEBLE = {
       G.add(caja(.03,.36,.03, mat.metal(), c[0]+s[0],.18,c[1]+s[1]));
   },
   tv(G,c,ang){
-    G.add(caja(1.28,.72,.05, mat.negro(), c[0],1.30,c[1],ang));
-    G.add(caja(1.55,.36,.34, mat.madera(), c[0],.18,c[1],ang));
+    G.add(caja(1.24,.70,.04, mat.negro(), c[0],1.32,c[1],ang));      // panel, al muro
+    const d=[Math.sin(ang),Math.cos(ang)];
+    G.add(caja(1.50,.34,.36, mat.madera(), c[0]+d[0]*.16,.17,c[1]+d[1]*.16,ang)); // rack abajo
   },
   encimera(G,c,ang){ // cocina equipada — p28
     G.add(caja(2.60,.86,.62, mat.zocalo(), c[0],.43,c[1],ang));
@@ -496,32 +498,68 @@ const MUEBLE = {
   refrigeradora(){}, campana(){}, fregadero(){},
 };
 
-// coloca los muebles pegados a un muro razonable del ambiente
-function amoblar(G, amb){
-  const p=amb.poligono_m, c=centro(p);
-  const xs=p.map(q=>q[0]), ys=p.map(q=>q[1]);
-  const w=Math.max(...xs)-Math.min(...xs), d=Math.max(...ys)-Math.min(...ys);
-  const ang = w>d ? 0 : Math.PI/2;   // orienta según el eje largo
-  const puesto=new Set();
-  const cerca=(fx,fy)=>[Math.min(...xs)+w*fx, Math.min(...ys)+d*fy];
+/*  Anclaje a muro.
+    Antes colocaba en fracciones del bounding box: la TV terminaba flotando
+    en medio de la sala y el inodoro medio metido en la pared. Ahora cada
+    mueble se pega a un lado real del ambiente, con su fondo hacia el muro
+    y su frente hacia adentro.
 
-  const plan = {
-    dormitorio: [['cama',[.5,.55],ang],['closet',[.5,.06],ang]],
-    sala:       [['sofa',[.20,.5],ang+Math.PI/2],['tv',[.90,.5],ang+Math.PI/2],
-                 ['mesa_centro',[.50,.5],ang],['mesa_comedor',[.50,.15],ang]],
-    cocina:     [['encimera',[.5,.86],0],['lavadora',[.90,.30],0]],
-    bano:       [['inodoro',[.28,.30],0],['ducha',[.74,.74],0],['lavatorio',[.28,.80],Math.PI]],
-    terraza:    [['planta',[.85,.5],0]],
-  }[amb.tipo] || [];
-
-  for(const [nombre, f, a] of plan){
-    if(!MUEBLE[nombre] || puesto.has(nombre)) continue;
-    // solo si el mueble figura en el grafo, o es infraestructura del ambiente
-    const declarado = (amb.muebles||[]).some(m=>m.includes(nombre.split('_')[0]));
-    const infra = ['inodoro','ducha','lavatorio','encimera'].includes(nombre);
-    if(!declarado && !infra) continue;
-    try{ MUEBLE[nombre](G, cerca(...f), a); puesto.add(nombre); }catch(e){}
+    lado:  N = +y   S = -y   E = +x   W = -x
+    Devuelve [x,z] ya retranqueado por el fondo del mueble, y el ángulo
+    para que el objeto MIRE hacia el interior.                              */
+function contra(amb, lado, fondo, t=.5, sep=.04){
+  const p=amb.poligono_m;
+  const x0=Math.min(...p.map(q=>q[0])), x1=Math.max(...p.map(q=>q[0]));
+  const y0=Math.min(...p.map(q=>q[1])), y1=Math.max(...p.map(q=>q[1]));
+  const d=fondo/2+sep;
+  switch(lado){
+    case 'N': return {c:[x0+(x1-x0)*t, y1-d], ang:Math.PI};
+    case 'S': return {c:[x0+(x1-x0)*t, y0+d], ang:0};
+    case 'E': return {c:[x1-d, y0+(y1-y0)*t], ang:-Math.PI/2};
+    case 'W': return {c:[x0+d, y0+(y1-y0)*t], ang:Math.PI/2};
   }
+}
+const dims = amb => {
+  const p=amb.poligono_m;
+  return {w:Math.max(...p.map(q=>q[0]))-Math.min(...p.map(q=>q[0])),
+          d:Math.max(...p.map(q=>q[1]))-Math.min(...p.map(q=>q[1]))};
+};
+
+function amoblar(G, amb, g){
+  const {w,d}=dims(amb);
+  const ancho = w>=d;                       // ¿el ambiente es más ancho que profundo?
+  const M=(n,lado,fondo,t,sep)=>{
+    if(!MUEBLE[n]) return;
+    const declarado=(amb.muebles||[]).some(x=>x.includes(n.split('_')[0]));
+    const infra=['inodoro','ducha','lavatorio','encimera'].includes(n);
+    if(!declarado && !infra) return;
+    const {c,ang}=contra(amb,lado,fondo,t,sep);
+    try{ MUEBLE[n](G,c,ang); }catch(e){ console.warn(n,e); }
+  };
+
+  if(amb.tipo==='dormitorio'){
+    // cabecera contra el muro largo; TV/closet enfrente
+    M('cama',   ancho?'N':'W', 2.02, .5);
+    M('closet', ancho?'S':'E', 0.58, .5, .02);
+  }
+  if(amb.tipo==='sala'){
+    // sofá y TV enfrentados a lo largo del eje corto
+    const [aSofa,aTv] = ancho ? ['S','N'] : ['W','E'];
+    M('sofa',        aSofa, 0.86, .38);
+    M('tv',          aTv,   0.06, .38, .01);      // colgada al muro, no flotando
+    M('mesa_centro', aSofa, 0.52, .38, ancho?1.15:1.15);
+    M('mesa_comedor', ancho?'E':'N', 1.30, .5);
+  }
+  if(amb.tipo==='cocina'){
+    M('encimera', ancho?'N':'W', 0.62, .45);
+    M('lavadora', ancho?'E':'S', 0.60, .12);
+  }
+  if(amb.tipo==='bano'){
+    M('inodoro',   ancho?'W':'N', 0.58, .22);
+    M('lavatorio', ancho?'W':'N', 0.46, .70);
+    M('ducha',     ancho?'E':'S', 0.92, .78, .02);
+  }
+  if(amb.tipo==='terraza') M('planta', 'E', 0.38, .5, .10);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -549,9 +587,10 @@ function construir(g){
   escena.remove(mundo); mundo=new THREE.Group(); escena.add(mundo);
   const h=g.altura_techo_m||2.4, V=g.vanos_m||[], ext=g.poligono_exterior_m, luces=[];
 
+  mundo.add(piso(ext, 'SPC', .002));            // base: tapa la circulación
   for(const a of g.ambientes){
-    mundo.add(piso(a.poligono_m, PISO_MAT[a.tipo]||'SPC', .005));
-    amoblar(mundo, a);
+    mundo.add(piso(a.poligono_m, PISO_MAT[a.tipo]||'SPC', .006));
+    amoblar(mundo, a, g);
   }
   for(const m of murosDe(g))
     mundo.add(muro(m.a, m.b, h, m.esp, 'muro', V, luces));
