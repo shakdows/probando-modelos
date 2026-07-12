@@ -280,7 +280,7 @@ try{
 }catch(e){ console.warn('SSAO no disponible, sigo sin él', e); comp=null; }
 
 let mundo=new THREE.Group(); escena.add(mundo);
-let grafo=null, planta=false;
+let grafo=null, planta=false, cieloRaso=null;
 const tour={on:false,curva:null,t:0,dur:30};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -376,13 +376,16 @@ function muro(a,b,h,esp,tipoMat,vanos,luces){
 }
 
 function piso(poli, tipoMat, y=0){
-  const s=new THREE.Shape(poli.map(p=>new THREE.Vector2(p[0],p[1])));
+  // OJO: ShapeGeometry vive en XY. Al rotar -90° sobre X, (x,y) → (x,0,-y).
+  // Los muros usan a[1] como Z directo (+y). Si no negamos aquí, el piso
+  // aterriza espejado respecto de sus propios muros.
+  const s=new THREE.Shape(poli.map(p=>new THREE.Vector2(p[0], -p[1])));
   const g=new THREE.ShapeGeometry(s);
-  // UV en metros → el tiling ya no depende del tamaño del ambiente
   const pos=g.attributes.position, uv=[];
-  for(let i=0;i<pos.count;i++) uv.push(pos.getX(i), pos.getY(i));
+  for(let i=0;i<pos.count;i++) uv.push(pos.getX(i), pos.getY(i));   // UV en metros
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
   const m=new THREE.Mesh(g, mat[tipoMat](1));
+  m.material.side=THREE.DoubleSide;   // al negar Y se invierte el winding
   m.rotation.x=-Math.PI/2; m.position.y=y; m.receiveShadow=true;
   return m;
 }
@@ -530,6 +533,18 @@ function enExterior(s,e,ext){
   return false;
 }
 
+// Los muros se DECLARAN en el grafo. No se deducen de los ambientes.
+// Deducirlos era el bug que tabicaba la planta abierta y hacía sentir chico el depto.
+function murosDe(g){
+  if(Array.isArray(g.muros_m) && g.muros_m.length)
+    return g.muros_m.map(m=>({a:m.a, b:m.b, esp:m.esp || (m.tipo==='exterior'?ESP_EXT:ESP_INT)}));
+
+  // fallback esquema 1: perímetro exterior nada más. NUNCA tabiques inventados.
+  console.warn('grafo sin muros_m — solo levanto el perímetro');
+  const ext=g.poligono_exterior_m;
+  return ext.map((p,i)=>({a:p, b:ext[(i+1)%ext.length], esp:ESP_EXT}));
+}
+
 function construir(g){
   escena.remove(mundo); mundo=new THREE.Group(); escena.add(mundo);
   const h=g.altura_techo_m||2.4, V=g.vanos_m||[], ext=g.poligono_exterior_m, luces=[];
@@ -538,21 +553,12 @@ function construir(g){
     mundo.add(piso(a.poligono_m, PISO_MAT[a.tipo]||'SPC', .005));
     amoblar(mundo, a);
   }
-  for(let i=0;i<ext.length;i++)
-    mundo.add(muro(ext[i],ext[(i+1)%ext.length],h,ESP_EXT,'muro',V,luces));
-  for(const a of g.ambientes){
-    if(a.tipo==='terraza') continue;
-    const p=a.poligono_m;
-    for(let i=0;i<p.length;i++){
-      const s=p[i], e=p[(i+1)%p.length];
-      if(enExterior(s,e,ext)) continue;
-      mundo.add(muro(s,e,h,ESP_INT,'muro',V,luces));
-    }
-  }
-  // cielo raso
-  const techo=piso(ext,'muro',h);
-  techo.rotation.x=Math.PI/2; techo.material=new THREE.MeshStandardMaterial({color:0xfbfaf8,roughness:.97});
-  mundo.add(techo);
+  for(const m of murosDe(g))
+    mundo.add(muro(m.a, m.b, h, m.esp, 'muro', V, luces));
+  // cielo raso — se oculta en vista de planta, si no solo ves una losa blanca
+  cieloRaso=piso(ext,'muro',h);
+  cieloRaso.material=new THREE.MeshStandardMaterial({color:0xfbfaf8,roughness:.97,side:THREE.DoubleSide});
+  mundo.add(cieloRaso);
   // losa exterior (para que el suelo no sea vacío al mirar por la ventana)
   const suelo=new THREE.Mesh(new THREE.PlaneGeometry(120,120),
     new THREE.MeshStandardMaterial({color:0x8f9aa8, roughness:1}));
@@ -561,6 +567,7 @@ function construir(g){
   const c=centro(ext);
   sol.target.position.set(c[0],1,c[1]); escena.add(sol.target);
   posSol();
+  if(cieloRaso) cieloRaso.visible=!planta;
   centrar(g);
 }
 
@@ -646,6 +653,7 @@ document.getElementById('btn-tour').onclick=e=>{
 document.getElementById('btn-plan').onclick=e=>{
   planta=!planta; tour.on=false; ctrl.unlock();
   const c=centro(grafo.poligono_exterior_m);
+  if(cieloRaso) cieloRaso.visible=!planta;
   if(planta){ctrl.getObject().position.set(c[0],14,c[1]+.01);cam.rotation.set(-Math.PI/2,0,0);}
   else centrar(grafo);
   e.target.textContent=planta?'Volver al recorrido':'Vista de planta';
