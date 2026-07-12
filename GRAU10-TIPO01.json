@@ -1,0 +1,65 @@
+{
+  "id": "GRAU10-TIPO01",
+  "_procedencia": "TRAZADO A MANO como referencia (gold standard). No es salida del extractor. Sirve para (a) demostrar el visor y (b) ser el objetivo que el extractor debe reproducir.",
+  "proyecto": "Grau 10 · Av. Miguel Grau 1020, Barranco",
+  "desarrolladora": "Edifica",
+  "arquitecto": "Lima 1007 Arquitectos",
+  "area_techada_m2": 43.31,
+  "dormitorios": 1,
+  "altura_techo_m": 2.4,
+  "orientacion": "fachada a AV. MIGUEL GRAU",
+  "poligono_exterior_m": [[0, 0], [6.0, 0], [6.0, 7.22], [0, 7.22]],
+  "ambientes": [
+    {
+      "nombre": "SALA COMEDOR",
+      "tipo": "sala",
+      "cota_impresa_m": [2.7, 4.9],
+      "poligono_m": [[0.15, 0.65], [2.85, 0.65], [2.85, 5.55], [0.15, 5.55]],
+      "muebles": ["sofa", "tv", "mesa_comedor", "mesa_centro"]
+    },
+    {
+      "nombre": "KITCHENETTE",
+      "tipo": "cocina",
+      "cota_impresa_m": [3.13, 1.5],
+      "poligono_m": [[0.15, 5.55], [3.28, 5.55], [3.28, 7.05], [0.15, 7.05]],
+      "muebles": ["encimera", "campana", "fregadero", "refrigeradora", "lavadora"]
+    },
+    {
+      "nombre": "DORMITORIO PRINCIPAL",
+      "tipo": "dormitorio",
+      "cota_impresa_m": [2.7, 3.4],
+      "poligono_m": [[3.15, 0.65], [5.85, 0.65], [5.85, 4.05], [3.15, 4.05]],
+      "muebles": ["cama", "veladores", "closet"]
+    },
+    {
+      "nombre": "BAÑO",
+      "tipo": "bano",
+      "cota_impresa_m": null,
+      "poligono_m": [[4.2, 4.6], [5.85, 4.6], [5.85, 7.05], [4.2, 7.05]],
+      "muebles": ["inodoro", "ducha", "lavatorio"]
+    },
+    {
+      "nombre": "TERRAZA",
+      "tipo": "terraza",
+      "cota_impresa_m": null,
+      "poligono_m": [[0.15, 0.05], [3.0, 0.05], [3.0, 0.65], [0.15, 0.65]],
+      "muebles": ["planta"]
+    }
+  ],
+  "vanos_m": [
+    { "tipo": "mampara", "extremos_m": [[0.4, 0.65], [2.6, 0.65]] },
+    { "tipo": "ventana", "extremos_m": [[3.6, 0.65], [5.5, 0.65]] },
+    { "tipo": "puerta", "extremos_m": [[3.15, 2.3], [3.15, 3.2]] },
+    { "tipo": "puerta", "extremos_m": [[4.2, 5.0], [4.2, 5.9]] },
+    { "tipo": "ventana", "extremos_m": [[0.15, 2.0], [0.15, 4.2]] }
+  ],
+  "acabados": {
+    "piso_sala": "SPC",
+    "piso_cocina": "SPC",
+    "tablero_cocina": "cuarzo",
+    "tablero_bano": "cuarzo",
+    "cocina": "equipada: encimera, horno, campana",
+    "ventanas": "perfilería de vidrio con reducción acústica"
+  },
+  "_fuente_acabados": "Página 28 del deck. Dictados por Edifica, no inferidos."
+}

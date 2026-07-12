@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NATTIVA · Visor de tipología</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f8; --card:#fff; --navy:#161d33; --muted:#6b748f;
+    --purple:#6d4eff; --teal:#0bb89a; --amber:#f5a623; --line:#dfe4f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Exo 2',system-ui,sans-serif;background:var(--bg);color:var(--navy);height:100vh;overflow:hidden}
+  #app{display:grid;grid-template-columns:1fr 340px;height:100vh}
+  @media(max-width:900px){#app{grid-template-columns:1fr;grid-template-rows:1fr auto}}
+
+  #viewport{position:relative;background:#c9d1e4}
+  canvas{display:block;width:100%;height:100%}
+
+  #hud{position:absolute;left:16px;top:16px;background:rgba(255,255,255,.92);
+       backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;
+       padding:12px 16px;box-shadow:0 4px 24px rgba(22,29,51,.10)}
+  #hud h1{font-family:Orbitron,sans-serif;font-size:15px;letter-spacing:.04em;font-weight:800}
+  #hud .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  #hud .stats{display:flex;gap:14px;margin-top:10px;font-size:12px}
+  #hud .stats b{display:block;font-family:Orbitron,sans-serif;font-size:16px}
+
+  #ayuda{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
+         background:rgba(22,29,51,.86);color:#fff;padding:9px 18px;border-radius:99px;
+         font-size:12.5px;letter-spacing:.02em;white-space:nowrap;transition:opacity .3s}
+  #ayuda.off{opacity:0;pointer-events:none}
+  kbd{background:rgba(255,255,255,.18);border-radius:4px;padding:1px 6px;font-family:inherit;font-size:11px}
+
+  aside{background:var(--card);border-left:1px solid var(--line);padding:22px;overflow-y:auto}
+  aside h2{font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:.14em;
+           text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+  aside h2:first-child{margin-top:0}
+
+  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:16px;text-align:center;
+        font-size:13px;color:var(--muted);cursor:pointer;transition:.15s}
+  .drop:hover,.drop.on{border-color:var(--purple);color:var(--purple);background:#f7f5ff}
+
+  .amb{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;
+       border-radius:8px;cursor:pointer;font-size:13.5px;transition:.12s;border:1px solid transparent}
+  .amb:hover{background:#f4f6fc;border-color:var(--line)}
+  .amb .m2{font-family:Orbitron,sans-serif;font-size:11px;color:var(--muted)}
+  .swatch{width:9px;height:9px;border-radius:2px;margin-right:9px;flex:0 0 auto}
+
+  .chk{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;
+       border-bottom:1px solid var(--line);font-size:13px}
+  .chk:last-child{border:0}
+  .val{font-family:Orbitron,sans-serif;font-size:13px}
+  .ok{color:var(--teal)} .warn{color:var(--amber)}
+
+  button{width:100%;padding:11px;border:0;border-radius:9px;font-family:'Exo 2';font-weight:600;
+         font-size:13.5px;cursor:pointer;transition:.15s;margin-top:8px}
+  .primary{background:var(--navy);color:#fff}
+  .primary:hover{background:#2a3355}
+  .ghost{background:#f4f6fc;color:var(--navy);border:1px solid var(--line)}
+  .ghost:hover{background:#e9edf7}
+
+  .acab{font-size:12.5px;color:var(--muted);line-height:1.75}
+  .acab b{color:var(--navy);font-weight:600}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:8px;
+        padding:10px;background:#f7f8fc;border-radius:8px;border-left:2px solid var(--amber)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="viewport">
+    <div id="hud">
+      <h1 id="h-tipo">—</h1>
+      <div class="sub" id="h-proy">—</div>
+      <div class="stats">
+        <div><b id="h-area">—</b>área techada</div>
+        <div><b id="h-dorm">—</b>dorms.</div>
+        <div><b id="h-alt">—</b>altura</div>
+      </div>
+    </div>
+    <div id="ayuda"><kbd>W A S D</kbd> caminar · <kbd>mouse</kbd> mirar · <kbd>Esc</kbd> salir · click para entrar</div>
+  </div>
+
+  <aside>
+    <h2>Grafo de escena</h2>
+    <div class="drop" id="drop">Suelta un <b>scene_graph.json</b><br>o haz clic para elegirlo</div>
+    <input type="file" id="file" accept=".json" hidden>
+
+    <h2>Ambientes</h2>
+    <div id="lista"></div>
+
+    <h2>Control de cierre</h2>
+    <div id="check"></div>
+
+    <h2>Acabados</h2>
+    <div class="acab" id="acab"></div>
+
+    <h2>Recorrido</h2>
+    <button class="primary" id="btn-tour">Reproducir recorrido</button>
+    <button class="ghost" id="btn-plan">Vista de planta</button>
+    <div class="nota" id="nota"></div>
+  </aside>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
+
+// ── acabados del deck (p28) → materiales PBR. No se adivina nada.
+const MAT = {
+  SPC:      {color:0x9d8570, rough:.62, metal:.02},   // piso vinílico símil madera
+  porcel:   {color:0xd8d4cd, rough:.35, metal:.03},   // baño
+  cuarzo:   {color:0xf0efec, rough:.22, metal:.04},
+  muro:     {color:0xf3f2ef, rough:.94, metal:0},
+  exterior: {color:0x2f3550, rough:.88, metal:0},
+  terraza:  {color:0xb9b6b0, rough:.80, metal:0},
+};
+const PISO = {sala:'SPC', dormitorio:'SPC', cocina:'SPC', bano:'porcel', terraza:'terraza', default:'SPC'};
+const TINTE = {sala:'#6d4eff', dormitorio:'#0bb89a', cocina:'#f5a623', bano:'#5b9bd5', terraza:'#8fbf6f'};
+
+const ESP_EXT = 0.20, ESP_INT = 0.10;
+
+// ── escena
+const vp = document.getElementById('viewport');
+const escena = new THREE.Scene();
+escena.background = new THREE.Color(0xc9d1e4);
+const cam = new THREE.PerspectiveCamera(72, 1, .05, 200);
+const rend = new THREE.WebGLRenderer({antialias:true});
+rend.shadowMap.enabled = true; rend.shadowMap.type = THREE.PCFSoftShadowMap;
+rend.toneMapping = THREE.ACESFilmicToneMapping; rend.toneMappingExposure = 1.05;
+vp.appendChild(rend.domElement);
+
+escena.add(new THREE.HemisphereLight(0xdce6ff, 0x8a8175, 1.5));
+const sol = new THREE.DirectionalLight(0xfff2df, 2.3);
+sol.position.set(-9, 11, 7); sol.castShadow = true;
+sol.shadow.mapSize.set(2048,2048);
+Object.assign(sol.shadow.camera, {left:-14,right:14,top:14,bottom:-14,near:.5,far:44});
+escena.add(sol);
+
+const ctrl = new PointerLockControls(cam, rend.domElement);
+escena.add(ctrl.getObject());
+const ayuda = document.getElementById('ayuda');
+rend.domElement.addEventListener('click', ()=>{ if(!tour.on) ctrl.lock(); });
+ctrl.addEventListener('lock',  ()=>ayuda.classList.add('off'));
+ctrl.addEventListener('unlock',()=>ayuda.classList.remove('off'));
+
+const teclas = {};
+addEventListener('keydown', e=>teclas[e.code]=true);
+addEventListener('keyup',   e=>teclas[e.code]=false);
+
+let mundo = new THREE.Group(); escena.add(mundo);
+let grafo = null, planta = false;
+const tour = {on:false, curva:null, t:0, dur:26};
+
+// ── construcción de muros con vanos carvados
+function muro(a, b, h, esp, mat, vanos){
+  const g = new THREE.Group();
+  const dx = b[0]-a[0], dy = b[1]-a[1];
+  const L = Math.hypot(dx,dy); if(L < .02) return g;
+  const ang = Math.atan2(dy,dx);
+
+  // proyectar vanos sobre este muro → tramos [t0,t1] en 0..L
+  const cortes = [];
+  for(const v of (vanos||[])){
+    const [p,q] = v.extremos_m;
+    const s = proy(p,a,b), e = proy(q,a,b);
+    if(s === null || e === null) continue;
+    cortes.push({t0:Math.min(s,e), t1:Math.max(s,e), tipo:v.tipo});
+  }
+  cortes.sort((x,y)=>x.t0-y.t0);
+
+  const bloque = (t0,t1,y0,y1,m)=>{
+    if(t1-t0 < .02 || y1-y0 < .02) return;
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(t1-t0, y1-y0, esp),
+      new THREE.MeshStandardMaterial(m===  'vidrio'
+        ? {color:0xbcd6e8, transparent:true, opacity:.22, roughness:.05, metalness:.1}
+        : {color:MAT[m].color, roughness:MAT[m].rough, metalness:MAT[m].metal}));
+    const c = (t0+t1)/2;
+    box.position.set(a[0]+Math.cos(ang)*c, (y0+y1)/2, a[1]+Math.sin(ang)*c);
+    box.rotation.y = -ang;
+    box.castShadow = box.receiveShadow = (m !== 'vidrio');
+    g.add(box);
+  };
+
+  // tramos llenos entre vanos
+  let cur = 0;
+  for(const c of cortes){
+    bloque(cur, c.t0, 0, h, mat);
+    if(c.tipo === 'puerta'){
+      bloque(c.t0, c.t1, 2.10, h, mat);                    // dintel
+    } else {                                                // ventana / mampara
+      const alf = c.tipo === 'mampara' ? 0.02 : 0.95;
+      bloque(c.t0, c.t1, 0, alf, mat);                     // alféizar
+      bloque(c.t0, c.t1, alf, h-0.18, 'vidrio');           // vidrio
+      bloque(c.t0, c.t1, h-0.18, h, mat);                  // dintel
+    }
+    cur = c.t1;
+  }
+  bloque(cur, L, 0, h, mat);
+  return g;
+}
+
+// proyección escalar de p sobre el segmento a→b; null si cae fuera
+function proy(p, a, b){
+  const dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy;
+  const t = ((p[0]-a[0])*dx + (p[1]-a[1])*dy) / L2;
+  const cx = a[0]+t*dx, cy = a[1]+t*dy;
+  if(Math.hypot(p[0]-cx, p[1]-cy) > .30) return null;   // no pertenece a este muro
+  if(t < -.02 || t > 1.02) return null;
+  return t * Math.sqrt(L2);
+}
+
+function piso(poli, mat){
+  const s = new THREE.Shape(poli.map(p=>new THREE.Vector2(p[0],p[1])));
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(s),
+    new THREE.MeshStandardMaterial({color:MAT[mat].color, roughness:MAT[mat].rough, metalness:MAT[mat].metal}));
+  m.rotation.x = -Math.PI/2; m.position.y = .01; m.receiveShadow = true;
+  return m;
+}
+
+function construir(g){
+  mundo.clear(); mundo = new THREE.Group(); escena.add(mundo);
+  const h = g.altura_techo_m || 2.4;
+  const V = g.vanos_m || [];
+
+  // pisos por ambiente
+  for(const a of g.ambientes) mundo.add(piso(a.poligono_m, MAT[PISO[a.tipo]||PISO.default] ? (PISO[a.tipo]||PISO.default) : 'SPC'));
+
+  // muros exteriores
+  const ext = g.poligono_exterior_m;
+  for(let i=0;i<ext.length;i++)
+    mundo.add(muro(ext[i], ext[(i+1)%ext.length], h, ESP_EXT, 'exterior', V));
+
+  // tabiques interiores (aristas de ambiente que no coinciden con el exterior)
+  for(const a of g.ambientes){
+    if(a.tipo === 'terraza') continue;
+    const p = a.poligono_m;
+    for(let i=0;i<p.length;i++){
+      const s = p[i], e = p[(i+1)%p.length];
+      if(enExterior(s,e,ext)) continue;
+      mundo.add(muro(s, e, h, ESP_INT, 'muro', V));
+    }
+  }
+
+  // losa de techo (semitransparente, para que la vista de planta funcione)
+  const techo = piso(ext, 'muro'); techo.position.y = h; techo.rotation.x = Math.PI/2;
+  techo.material.transparent = true; techo.material.opacity = .0;
+  mundo.add(techo);
+
+  centrar(g);
+}
+
+function enExterior(s, e, ext){
+  const m = [(s[0]+e[0])/2, (s[1]+e[1])/2];
+  for(let i=0;i<ext.length;i++){
+    const a=ext[i], b=ext[(i+1)%ext.length];
+    if(proy(m,a,b) !== null) return true;
+  }
+  return false;
+}
+
+function centrar(g){
+  const sala = g.ambientes.find(a=>a.tipo==='sala') || g.ambientes[0];
+  const c = centro(sala.poligono_m);
+  ctrl.getObject().position.set(c[0], 1.62, c[1]);
+  cam.rotation.set(0,0,0);
+}
+const centro = p => [p.reduce((s,q)=>s+q[0],0)/p.length, p.reduce((s,q)=>s+q[1],0)/p.length];
+
+// ── recorrido: waypoints por ambiente → spline → esto ES el video
+function rutaTour(g){
+  const orden = ['terraza','sala','cocina','bano','dormitorio'];
+  const pts = orden
+    .map(t => g.ambientes.find(a=>a.tipo===t))
+    .filter(Boolean)
+    .map(a => { const c = centro(a.poligono_m); return new THREE.Vector3(c[0], 1.60, c[1]); });
+  if(pts.length < 2) return null;
+  const c = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', .35);
+  return c;
+}
+
+// ── UI
+function pintar(g){
+  grafo = g;
+  document.getElementById('h-tipo').textContent = g.id;
+  document.getElementById('h-proy').textContent = g.desarrolladora + ' · ' + (g.proyecto||'');
+  document.getElementById('h-area').textContent = g.area_techada_m2 + ' m²';
+  document.getElementById('h-dorm').textContent = g.dormitorios;
+  document.getElementById('h-alt').textContent  = (g.altura_techo_m||2.4).toFixed(2) + ' m';
+
+  // ambientes + área calculada del polígono
+  const L = document.getElementById('lista'); L.innerHTML = '';
+  let suma = 0;
+  for(const a of g.ambientes){
+    const m2 = shoelace(a.poligono_m); suma += m2;
+    const d = document.createElement('div'); d.className = 'amb';
+    d.innerHTML = `<span style="display:flex;align-items:center">
+        <span class="swatch" style="background:${TINTE[a.tipo]||'#999'}"></span>${a.nombre}</span>
+      <span class="m2">${m2.toFixed(2)} m²</span>`;
+    d.onclick = ()=>{ const c = centro(a.poligono_m);
+      ctrl.getObject().position.set(c[0],1.62,c[1]); tour.on=false; };
+    L.appendChild(d);
+  }
+
+  // control de cierre — el número que decide si el pipeline sirve
+  const bruto = shoelace(g.poligono_exterior_m);
+  const err = (bruto - g.area_techada_m2)/g.area_techada_m2*100;
+  const ok = Math.abs(err) < 5;
+  document.getElementById('check').innerHTML = `
+    <div class="chk"><span>Suma de ambientes</span><span class="val">${suma.toFixed(2)} m²</span></div>
+    <div class="chk"><span>Polígono exterior</span><span class="val">${bruto.toFixed(2)} m²</span></div>
+    <div class="chk"><span>Área techada (deck)</span><span class="val">${g.area_techada_m2.toFixed(2)} m²</span></div>
+    <div class="chk"><span>Error de cierre</span>
+      <span class="val ${ok?'ok':'warn'}">${err>0?'+':''}${err.toFixed(2)} %</span></div>
+    <div class="chk"><span>Muros + circulación</span>
+      <span class="val">${(bruto-suma).toFixed(2)} m² · ${((bruto-suma)/bruto*100).toFixed(0)}%</span></div>`;
+
+  const a = g.acabados||{};
+  document.getElementById('acab').innerHTML = Object.entries(a)
+    .map(([k,v])=>`<b>${k.replace(/_/g,' ')}:</b> ${v}`).join('<br>');
+
+  document.getElementById('nota').textContent =
+    g._procedencia || g.notas_extractor || 'Grafo emitido por el extractor.';
+
+  construir(g);
+  tour.curva = rutaTour(g);
+}
+
+function shoelace(p){
+  let s=0; for(let i=0;i<p.length;i++){ const q=p[(i+1)%p.length];
+    s += p[i][0]*q[1] - q[0]*p[i][1]; }
+  return Math.abs(s)/2;
+}
+
+// carga
+const drop = document.getElementById('drop'), file = document.getElementById('file');
+drop.onclick = ()=>file.click();
+file.onchange = e => leer(e.target.files[0]);
+drop.ondragover = e=>{e.preventDefault(); drop.classList.add('on');};
+drop.ondragleave = ()=>drop.classList.remove('on');
+drop.ondrop = e=>{e.preventDefault(); drop.classList.remove('on'); leer(e.dataTransfer.files[0]);};
+function leer(f){ const r=new FileReader(); r.onload=()=>{ try{pintar(JSON.parse(r.result));}
+  catch(err){ alert('JSON inválido: '+err.message); } }; r.readAsText(f); }
+
+document.getElementById('btn-tour').onclick = ()=>{
+  if(!tour.curva) return;
+  tour.on = !tour.on; tour.t = 0; ctrl.unlock();
+  document.getElementById('btn-tour').textContent = tour.on ? 'Detener' : 'Reproducir recorrido';
+};
+document.getElementById('btn-plan').onclick = ()=>{
+  planta = !planta; tour.on = false; ctrl.unlock();
+  const c = centro(grafo.poligono_exterior_m);
+  if(planta){ ctrl.getObject().position.set(c[0], 13, c[1]+0.01); cam.rotation.set(-Math.PI/2,0,0); }
+  else centrar(grafo);
+  document.getElementById('btn-plan').textContent = planta ? 'Volver al recorrido' : 'Vista de planta';
+};
+
+// loop
+const reloj = new THREE.Clock();
+const vel = new THREE.Vector3();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt = Math.min(reloj.getDelta(), .05);
+
+  if(tour.on && tour.curva){
+    tour.t += dt / tour.dur;
+    if(tour.t >= 1){ tour.t = 0; }
+    const p = tour.curva.getPointAt(tour.t);
+    const q = tour.curva.getPointAt(Math.min(tour.t + .02, .999));
+    ctrl.getObject().position.copy(p);
+    cam.parent.lookAt ? null : null;
+    ctrl.getObject().lookAt(q.x, 1.55, q.z);
+  } else if(ctrl.isLocked){
+    const s = (teclas.ShiftLeft ? 5.2 : 2.6) * dt;
+    vel.set(0,0,0);
+    if(teclas.KeyW||teclas.ArrowUp)   vel.z += s;
+    if(teclas.KeyS||teclas.ArrowDown) vel.z -= s;
+    if(teclas.KeyA||teclas.ArrowLeft) vel.x -= s;
+    if(teclas.KeyD||teclas.ArrowRight)vel.x += s;
+    ctrl.moveForward(vel.z); ctrl.moveRight(vel.x);
+  }
+  rend.render(escena, cam);
+}
+function resize(){
+  const w = vp.clientWidth, h = vp.clientHeight;
+  cam.aspect = w/h; cam.updateProjectionMatrix(); rend.setSize(w,h);
+  rend.setPixelRatio(Math.min(devicePixelRatio,2));
+}
+addEventListener('resize', resize); resize(); loop();
+
+// carga el TIPO 01 de referencia al abrir
+fetch('GRAU10-TIPO01.json').then(r=>r.json()).then(pintar).catch(()=>{
+  document.getElementById('nota').textContent =
+    'Suelta un scene_graph.json para empezar.';
+});
+</script>
+</body>
+</html>
